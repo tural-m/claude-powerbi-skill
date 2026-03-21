@@ -1,6 +1,6 @@
-# Power BI AI Analytics Assistant — Claude Skill
+# claude-powerbi-skill
 
-> A structured, self-validating AI analytics assistant for Claude that covers the full Power BI lifecycle — from environment detection to a scored session summary with ranked business insights.
+> A lean, intent-driven AI analytics assistant for Claude — built to catch data problems before they corrupt analysis, then get out of the way.
 
 ## Overview
 
@@ -9,7 +9,7 @@
 | **Domain** | Business Intelligence · Data Analytics |
 | **Tools** | Claude AI · Power BI MCP · DAX · Power Query · VS Code |
 | **Trigger** | Any Power BI, DAX, data model, or analytics workflow in Claude |
-| **Structure** | 9 blocks · 45 tasks · sequential workflow |
+| **Design** | Expert-speed · intent-driven · proceed-and-warn |
 
 ---
 
@@ -17,57 +17,123 @@
 
 Working with Claude AI + MCP + Power BI on a real project, a lot of questions came up fast:
 
-- How should an AI handle data quality *before* running analysis?
+- How should an AI handle data quality before running analysis?
 - What stops it from generating DAX against columns that don't exist?
 - How do you ensure insights are backed by evidence, not just pattern-matched guesses?
 
-No existing skill handled this. So this one was built from scratch.
+I searched for an existing skill that handled this. Nothing out there. So I built one from scratch — and then rebuilt it three more times until it actually matched how real BI work happens.
 
 ---
 
-## Workflow — 9 Blocks in Sequence
+## How It Works
+
+No pipeline. No sequential blocks. No mode selection.
 
 ```
-BLOCK 1  Environment Awareness       ← always run first
-BLOCK 2  Data Model Validation       ← always run before analysis
-BLOCK 3  Data Quality Audit          ← gates analysis if critical issues found ⛔
-BLOCK 4  Analytical Assistance       ← on user request
-BLOCK 5  Insight Generation          ← after analysis
-BLOCK 6  Validation & Safety         ← runs continuously throughout
-BLOCK 7  Performance & Refresh       ← advanced
-BLOCK 8  Data Lineage & Dependencies ← advanced
-BLOCK 9  Documentation & Summary     ← always run at session end
+User asks anything
+      ↓
+Detect intent
+      ↓
+Run Data Clarity Check (Light)   ← always, runs in background
+      ↓
+Issues found? → auto-upgrade to Deep check
+      ↓
+Respond: answer + inline warnings + 3-line micro-summary + one soft suggestion
+```
+
+Every response is self-contained. Heavy modules (SQL validation, performance audit, lineage, documentation) are on demand — never automatic.
+
+---
+
+## Core Feature: Data Clarity Check
+
+The single thing this skill does better than vanilla Claude.
+
+**Light check (always runs)** — null %, key duplicates, relationship risks, MCP schema confirmation. One line inline. Takes seconds.
+
+**Deep check (auto-triggered)** — runs automatically if Light finds a critical issue. Adds fuzzy label detection, full column profiling, outlier detection, filter context audit.
+
+```
+⚠️ Data clarity: customer_region 28% null [🔴 affects this analysis] · order_id 142 dupes [🟡]
+```
+
+**Warning levels:**
+- 🔴 Critical — affects KPI correctness directly
+- 🟡 Warning — may affect interpretation
+- 🔵 Info — minor, noted once
+
+No blocking. Ever. Analysts work with imperfect data intentionally — the skill warns and proceeds.
+
+---
+
+## DAX Generation
+
+- Confirms schema via MCP before generating — if unavailable, makes smart labeled assumption
+- Inline comments on every measure explaining logic
+- Flags performance risks and filter context issues inline
+- KPI Definition Card available on request — never forced
+
+```dax
+-- [assumed: Sales[revenue] = gross revenue — MCP returned no definition]
+-- ⚠️ crosses many-to-many (Orders ↔ Products) — verify result
+Total Revenue = CALCULATE(SUM(Sales[revenue]), Sales[status] = "Completed")
 ```
 
 ---
 
-## Key Capabilities
+## Insight Generation — Two Layers
 
-**Data Model Validation**
-Classifies tables (fact / dimension / bridge), detects schema type (star / snowflake / flat), audits all relationships, flags many-to-many, and computes a **Model Health Score (0–100)** across schema quality, data quality, performance, and documentation.
+**Layer 1 `[data]`** — only what the numbers directly support. Evidence, magnitude, confidence score.
 
-**Data Quality Audit with Gating**
-Checks nulls, duplicates, inconsistent category labels, and outliers. If a critical issue is found (e.g. >25% missing values on a key column), analysis is blocked until it's resolved — not just warned about.
+**Layer 2 `[hypothesis]`** — analyst inference, clearly labeled, always includes a validation suggestion.
 
-**Natural Language → DAX with Guardrails**
-Before generating any DAX, the assistant clarifies ambiguous KPI definitions ("revenue" → gross or net? includes returns?), confirms every table and column name exists via MCP, and annotates generated code with inline comments.
+```
+[data]       Electronics revenue +22% QoQ
+             $4.2M · 41% of total · 1,840 orders · conf: 0.82
 
-**Hallucination Prevention**
-Every column and table reference is confirmed via MCP before it appears in any generated code. If confirmation fails, the assistant stops and states why — it does not guess.
+[hypothesis] Likely seasonal effect — Q4 pattern visible in 2023 and 2024.
+             → Validate: compare Q4 2022, check category mix shift
+```
 
-**Insight Scoring**
-Every finding includes: absolute magnitude, % contribution to total, driving segment, trend validation (only labeled a "trend" if consistent across ≥3 periods and exceeds historical volatility), and a confidence score.
+Stakeholders get something actionable. Credibility stays intact.
 
-**Session Summary**
-Every session closes with a full AI Assistant Summary: Model Health Score, ranked insights, data quality issues, performance risks, assumption log, and auto-generated documentation (data dictionary, table descriptions, measure definitions).
+---
+
+## Micro-Summary
+
+Every response ends with three lines:
+
+```
+──────────────────────────────
+Data:     1 critical (customer_region nulls), 1 warning (dupes)
+Finding:  Electronics revenue +22% QoQ — high confidence
+Next:     Want SQL validation or performance audit on this model?
+──────────────────────────────
+```
+
+---
+
+## On-Demand Modules
+
+Triggered by user request — never automatic.
+
+| Module | How to trigger |
+|---|---|
+| Consistency Check | *"check this measure"* / *"verify this result"* |
+| SQL Validation | *"validate with SQL"* / *"cross-check against source"* |
+| Performance Audit | *"audit performance"* / *"why is this slow"* |
+| Lineage Trace | *"trace this column"* / *"what uses this measure"* |
+| KPI Definition Card | *"show KPI card"* / *"define this metric formally"* |
+| Documentation | *"document this model"* / *"generate data dictionary"* |
 
 ---
 
 ## Repo Structure
 
 ```
-powerbi-analytics-assistant/
-├── SKILL.md                          # Main skill file
+claude-powerbi-skill/
+├── README.md
+├── SKILL.md                          # Main skill file (v4)
 ├── references/
 │   ├── dax-optimization.md           # DAX anti-patterns and rewrites
 │   ├── lineage-patterns.md           # Common dependency structures
@@ -78,25 +144,26 @@ powerbi-analytics-assistant/
 
 ---
 
-## How to Use
+## How to Install
 
 1. Go to **Claude.ai → Settings → Skills**
-2. Upload the `powerbi-analytics-assistant` folder as a skill
-3. Start a new conversation — the skill activates automatically when you mention Power BI, DAX, data models, or analytics workflows
-
-The skill runs blocks in sequence by default. You can also call any block directly — for example: *"Run a data quality audit on my current model"* triggers Block 3 only.
+2. Upload the `claude-powerbi-skill` folder
+3. Start a conversation — the skill activates automatically when you mention Power BI, DAX, data models, or analytics workflows
 
 ---
 
-## Demo Minimum (3 things that must work)
+## Version History
 
-1. Natural language → DAX with KPI guardrails (Blocks 4 + 6)
-2. Data quality audit with gated report (Block 3)
-3. AI Assistant Summary with ranked insights + confidence scores (Blocks 5 + 9)
+| Version | Design |
+|---|---|
+| v1 | Sequential pipeline · 9 blocks · 45 tasks · hard gates |
+| v2 | + KPI Definition Cards · + causal claim rules · + filter context audit |
+| v3 | + Fast mode · + MCP degraded mode · + SQL validation layer · + honest validation labels |
+| v4 | Full rethink → intent-driven · proceed-and-warn · expert-speed · lean core |
 
 ---
 
 ## Author
 
-**Tural Mansimov**  
-[LinkedIn](https://linkedin.com/in/tural-m)
+**Tural Mansimov** 
+[LinkedIn](https://linkedin.com/in/tural-m) · [GitHub](https://github.com/tural-m)
