@@ -1,0 +1,489 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Power BI AI Analytics Assistant — v4</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Instrument+Serif:ital@0;1&family=Syne:wght@700;800&display=swap');
+
+  :root {
+    --bg:      #0c0c0e;
+    --surface: #111116;
+    --border:  #1c1c24;
+    --border2: #252530;
+    --text:    #e2e2ec;
+    --muted:   #44445a;
+    --muted2:  #2a2a38;
+    --accent:  #f0c060;
+    --red:     #e05555;
+    --yellow:  #e0a830;
+    --blue:    #5599ee;
+    --green:   #44cc88;
+    --mono:    'DM Mono', monospace;
+    --serif:   'Instrument Serif', serif;
+    --display: 'Syne', sans-serif;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    font-family: var(--mono);
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    padding: 48px 24px 64px;
+    color: var(--text);
+  }
+
+  .page { width: 860px; }
+
+  @keyframes up {
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* HEADER */
+  .header {
+    margin-bottom: 48px;
+    opacity: 0;
+    animation: up .5s ease forwards .05s;
+  }
+  .eyebrow {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 3px;
+    color: var(--muted);
+    text-transform: uppercase;
+    margin-bottom: 10px;
+  }
+  .eyebrow span { color: var(--accent); }
+  h1 {
+    font-family: var(--display);
+    font-size: 32px;
+    font-weight: 800;
+    color: #fff;
+    line-height: 1;
+    margin-bottom: 10px;
+  }
+  h1 em {
+    font-family: var(--serif);
+    font-style: italic;
+    font-weight: 400;
+    color: var(--accent);
+    font-size: 34px;
+  }
+  .tagline {
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 1px;
+    line-height: 1.7;
+  }
+
+  /* SECTION LABEL */
+  .sec {
+    font-size: 9px;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .sec::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+  }
+
+  /* FLOW ROW */
+  .flow-row {
+    display: grid;
+    gap: 1px;
+    background: var(--border);
+    border: 1px solid var(--border);
+    margin-bottom: 10px;
+    opacity: 0;
+    transform: translateY(10px);
+    animation: up .45s ease forwards;
+  }
+  .flow-row.cols-3 { grid-template-columns: 1fr 1fr 1fr; }
+  .flow-row.cols-2 { grid-template-columns: 2fr 1fr; }
+
+  .flow-row:nth-child(2) { animation-delay: .15s; }
+  .flow-row:nth-child(3) { animation-delay: .25s; }
+  .flow-row:nth-child(4) { animation-delay: .35s; }
+
+  .node {
+    background: var(--surface);
+    padding: 16px 18px;
+  }
+  .node.al { border-left: 2px solid var(--accent); }
+  .node.gl { border-left: 2px solid var(--green); }
+  .node.bl { border-left: 2px solid var(--blue); }
+
+  .node-lbl {
+    font-size: 9px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 5px;
+  }
+  .node-title {
+    font-family: var(--display);
+    font-size: 13px;
+    font-weight: 700;
+    color: #fff;
+    margin-bottom: 5px;
+    line-height: 1.2;
+  }
+  .node-desc {
+    font-size: 10px;
+    color: var(--muted);
+    line-height: 1.65;
+  }
+  .tag {
+    display: inline-block;
+    margin-top: 9px;
+    font-size: 9px;
+    letter-spacing: 1px;
+    padding: 2px 7px;
+    border-radius: 2px;
+    text-transform: uppercase;
+  }
+  .tag-a { background: #f0c06012; color: var(--accent); border: 1px solid #f0c06028; }
+  .tag-r { background: #e0553512; color: var(--red);    border: 1px solid #e0553528; }
+  .tag-b { background: #5599ee12; color: var(--blue);   border: 1px solid #5599ee28; }
+  .tag-g { background: #44cc8812; color: var(--green);  border: 1px solid #44cc8828; }
+
+  /* ARROW */
+  .arrow-row {
+    display: flex;
+    justify-content: center;
+    padding: 8px 0;
+    opacity: 0;
+    animation: up .4s ease forwards .4s;
+  }
+  .arrow-inner {
+    font-size: 10px;
+    color: var(--muted2);
+    letter-spacing: 1px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .arrow-inner::before, .arrow-inner::after {
+    content: '';
+    width: 48px;
+    height: 1px;
+    background: var(--border);
+  }
+
+  /* WARN GRID */
+  .warn-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 1px;
+    background: var(--border);
+    border: 1px solid var(--border);
+    margin-bottom: 10px;
+    opacity: 0;
+    animation: up .45s ease forwards .6s;
+  }
+  .warn-cell {
+    background: var(--surface);
+    padding: 14px 16px;
+    display: flex;
+    gap: 11px;
+    align-items: flex-start;
+  }
+  .warn-icon { font-size: 13px; flex-shrink: 0; margin-top: 1px; }
+  .warn-title {
+    font-family: var(--display);
+    font-size: 12px;
+    font-weight: 700;
+    color: #fff;
+    margin-bottom: 3px;
+  }
+  .warn-desc { font-size: 10px; color: var(--muted); line-height: 1.6; }
+
+  /* DEMAND GRID */
+  .demand-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1px;
+    background: var(--border);
+    border: 1px solid var(--border);
+    margin-bottom: 10px;
+    opacity: 0;
+    animation: up .45s ease forwards .75s;
+  }
+  .demand-cell { background: var(--surface); padding: 13px 16px; }
+  .demand-name {
+    font-family: var(--display);
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--green);
+    margin-bottom: 3px;
+  }
+  .demand-trig { font-size: 9px; color: var(--muted); line-height: 1.6; font-style: italic; }
+
+  /* CODE BLOCK */
+  .code-wrap {
+    opacity: 0;
+    animation: up .45s ease forwards .88s;
+    margin-bottom: 10px;
+  }
+  .code-block {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    padding: 18px 20px;
+    font-size: 11px;
+    line-height: 1.85;
+    color: var(--muted);
+  }
+  .ld  { color: var(--accent); }
+  .lh  { color: var(--blue); }
+  .lv  { color: #fff; }
+  .lc  { color: var(--muted2); }
+  .la  { color: var(--green); }
+
+  /* MICRO SUMMARY */
+  .summary-wrap {
+    opacity: 0;
+    animation: up .45s ease forwards 1.0s;
+    margin-bottom: 40px;
+  }
+  .summary-box {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-left: 2px solid var(--accent);
+    padding: 16px 20px;
+    display: grid;
+    grid-template-columns: 58px 1fr;
+    gap: 14px;
+    align-items: start;
+  }
+  .summary-lbl {
+    font-size: 9px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--accent);
+    padding-top: 2px;
+  }
+  .sline {
+    font-size: 11px;
+    line-height: 1.9;
+    color: var(--muted);
+  }
+  .sline strong { color: #fff; font-weight: 500; }
+  .sline .sv { color: var(--accent); }
+
+  /* FOOTER */
+  .footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    opacity: 0;
+    animation: up .4s ease forwards 1.1s;
+    padding-top: 22px;
+    border-top: 1px solid var(--border);
+  }
+  .footer-l { font-size: 10px; color: var(--muted2); letter-spacing: 1px; }
+  .footer-l span { color: var(--muted); }
+  .stack { display: flex; gap: 5px; }
+  .pill {
+    font-size: 9px;
+    padding: 3px 8px;
+    border: 1px solid var(--border);
+    color: var(--muted2);
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    border-radius: 1px;
+  }
+
+  /* section spacing */
+  .gap { margin-bottom: 32px; }
+  .gap-sm { margin-bottom: 18px; }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <div class="header">
+    <div class="eyebrow">Claude AI · MCP · Power BI · <span>v4</span></div>
+    <h1>Power BI <em>Analytics Assistant</em></h1>
+    <div class="tagline">
+      Intent-driven · Proceed-and-warn · Expert-speed<br>
+      One job: catch data problems before they corrupt analysis — then get out of the way.
+    </div>
+  </div>
+
+  <!-- CORE -->
+  <div class="sec gap-sm" style="opacity:0;animation:up .4s ease forwards .1s">Core — always runs</div>
+  <div class="flow-row cols-3 gap" style="animation-delay:.18s">
+    <div class="node al">
+      <div class="node-lbl">Step 1</div>
+      <div class="node-title">Intent Detection</div>
+      <div class="node-desc">Reads the request. Runs minimum needed. No fixed sequence.</div>
+      <div class="tag tag-a">Always</div>
+    </div>
+    <div class="node al">
+      <div class="node-lbl">Step 2</div>
+      <div class="node-title">Data Clarity Check</div>
+      <div class="node-desc">Light: nulls · dupes · relationship risks · MCP confirm. One inline line.</div>
+      <div class="tag tag-a">Always</div>
+    </div>
+    <div class="node al">
+      <div class="node-lbl">Step 3</div>
+      <div class="node-title">Respond + Warn</div>
+      <div class="node-desc">Answer the request. Inline flags. 3-line micro-summary. One soft suggestion.</div>
+      <div class="tag tag-a">Always</div>
+    </div>
+  </div>
+
+  <div class="arrow-row" style="animation-delay:.38s">
+    <div class="arrow-inner">🔴 critical issue found → auto-upgrade to Deep</div>
+  </div>
+
+  <!-- AUTO -->
+  <div class="sec gap-sm" style="opacity:0;animation:up .4s ease forwards .42s;margin-top:8px">Auto-triggered — on critical issue only</div>
+  <div class="flow-row cols-2 gap" style="animation-delay:.48s">
+    <div class="node gl">
+      <div class="node-lbl">Deep Check</div>
+      <div class="node-title">Full Data Clarity Audit</div>
+      <div class="node-desc">Fuzzy label detection · full null profile · outlier detection · filter context audit · column distributions. Auto-runs on 🔴. Manual: "run deep check".</div>
+      <div class="tag tag-r">Auto on 🔴</div>
+    </div>
+    <div class="node gl">
+      <div class="node-lbl">Output</div>
+      <div class="node-title">Expanded Inline Report</div>
+      <div class="node-desc">Specific columns. Affected measures. Filter risks. Proceeding with caveats applied.</div>
+      <div class="tag tag-r">Inline</div>
+    </div>
+  </div>
+
+  <div class="arrow-row" style="animation-delay:.62s">
+    <div class="arrow-inner">user asks → intent triggered</div>
+  </div>
+
+  <!-- INTENT -->
+  <div class="sec gap-sm" style="opacity:0;animation:up .4s ease forwards .66s;margin-top:8px">Intent-triggered — runs when you ask</div>
+  <div class="flow-row cols-3 gap" style="animation-delay:.72s">
+    <div class="node bl">
+      <div class="node-lbl">DAX</div>
+      <div class="node-title">Generate + Optimize</div>
+      <div class="node-desc">MCP confirm or labeled assumption. Inline comments. Filter context flags.</div>
+      <div class="tag tag-b">On ask</div>
+    </div>
+    <div class="node bl">
+      <div class="node-lbl">Insights</div>
+      <div class="node-title">Two-Layer Output</div>
+      <div class="node-desc">[data] backed by evidence. [hypothesis] analyst inference, clearly labeled.</div>
+      <div class="tag tag-b">On ask</div>
+    </div>
+    <div class="node bl">
+      <div class="node-lbl">Suggest</div>
+      <div class="node-title">Soft Next Step</div>
+      <div class="node-desc">One relevant suggestion per response. Guides — doesn't wait to be asked.</div>
+      <div class="tag tag-b">Proactive</div>
+    </div>
+  </div>
+
+  <!-- WARN -->
+  <div class="sec gap-sm" style="opacity:0;animation:up .4s ease forwards .82s">Warning severity — no blocking, ever</div>
+  <div class="warn-grid gap">
+    <div class="warn-cell">
+      <div class="warn-icon">🔴</div>
+      <div>
+        <div class="warn-title">Critical</div>
+        <div class="warn-desc">Affects KPI correctness. Flagged inline on affected metrics. Proceed with caveats.</div>
+      </div>
+    </div>
+    <div class="warn-cell">
+      <div class="warn-icon">🟡</div>
+      <div>
+        <div class="warn-title">Warning</div>
+        <div class="warn-desc">May affect interpretation. Noted inline. Analyst decides how to handle.</div>
+      </div>
+    </div>
+    <div class="warn-cell">
+      <div class="warn-icon">🔵</div>
+      <div>
+        <div class="warn-title">Info</div>
+        <div class="warn-desc">Minor. Mentioned once. Doesn't interrupt workflow.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ON DEMAND -->
+  <div class="sec gap-sm" style="opacity:0;animation:up .4s ease forwards .94s">On demand — user triggers explicitly</div>
+  <div class="demand-grid gap">
+    <div class="demand-cell">
+      <div class="demand-name">Consistency Check</div>
+      <div class="demand-trig">"check this measure" · "verify this result"</div>
+    </div>
+    <div class="demand-cell">
+      <div class="demand-name">SQL Validation</div>
+      <div class="demand-trig">"validate with SQL" · "cross-check against source"</div>
+    </div>
+    <div class="demand-cell">
+      <div class="demand-name">Performance Audit</div>
+      <div class="demand-trig">"audit performance" · "why is this slow"</div>
+    </div>
+    <div class="demand-cell">
+      <div class="demand-name">Lineage Trace</div>
+      <div class="demand-trig">"trace this column" · "what uses this measure"</div>
+    </div>
+    <div class="demand-cell">
+      <div class="demand-name">KPI Definition Card</div>
+      <div class="demand-trig">"show KPI card" · "define this metric formally"</div>
+    </div>
+    <div class="demand-cell">
+      <div class="demand-name">Documentation</div>
+      <div class="demand-trig">"document this model" · "generate data dictionary"</div>
+    </div>
+  </div>
+
+  <!-- INSIGHT EXAMPLE -->
+  <div class="sec gap-sm" style="opacity:0;animation:up .4s ease forwards 1.04s">Insight output — two layers</div>
+  <div class="code-wrap">
+    <div class="code-block">
+      <span class="ld">[data]</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <span class="lv">Electronics revenue +22% QoQ</span><br>
+      &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <span class="lc">$4.2M · 41% of total · 1,840 orders · conf: 0.82</span><br>
+      <br>
+      <span class="lh">[hypothesis]</span> <span class="lv">Likely seasonal effect — Q4 pattern visible in 2023 and 2024.</span><br>
+      &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <span class="lc">Electronics may reflect end-of-year budget cycles.</span><br>
+      &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <span class="la">→ Validate:</span> <span class="lc">compare Q4 2022, check category mix shift</span>
+    </div>
+  </div>
+
+  <!-- MICRO SUMMARY -->
+  <div class="sec gap-sm" style="opacity:0;animation:up .4s ease forwards 1.12s">Micro-summary — every response, 3 lines</div>
+  <div class="summary-wrap">
+    <div class="summary-box">
+      <div class="summary-lbl">Summary</div>
+      <div>
+        <div class="sline"><strong>Data&nbsp;&nbsp;&nbsp;&nbsp;</strong> <span class="sv">1 critical</span> (customer_region nulls) · 1 warning (dupes)</div>
+        <div class="sline"><strong>Finding&nbsp;</strong> Electronics revenue +22% QoQ — high confidence</div>
+        <div class="sline"><strong>Next&nbsp;&nbsp;&nbsp;&nbsp;</strong> Want SQL validation or performance audit on this model?</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="footer">
+    <div class="footer-l">Built by <span>Tural Mansimov</span> · github.com/tural-m/claude-powerbi-skill</div>
+    <div class="stack">
+      <div class="pill">Claude AI</div>
+      <div class="pill">MCP</div>
+      <div class="pill">Power BI</div>
+      <div class="pill">DAX</div>
+      <div class="pill">v4</div>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>
